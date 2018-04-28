@@ -238,7 +238,7 @@ type nul>index.html
 
 窗口的标题是和`<title>`里的内容一致
 
-!(lorikeet-nwjs-1)[https://github.com/swordrain/electron-nwjs/blob/master/image/lorikeet-nwjs-1.png]
+![lorikeet-nwjs-1](https://github.com/swordrain/electron-nwjs/blob/master/image/lorikeet-nwjs-1.png)
 
 ## 创建electron应用
 ```
@@ -293,7 +293,7 @@ app.on('ready', () => {
 </html>
 ```
 
-!(lorikeet-electron-1)[https://github.com/swordrain/electron-nwjs/blob/master/image/lorikeet-electron-1.png]
+![lorikeet-electron-1](https://github.com/swordrain/electron-nwjs/blob/master/image/lorikeet-electron-1.png)
 
 ## 启动界面
 新建`app.css`
@@ -329,7 +329,7 @@ body {
 </body>
 ```
 
-!(toolbar)[https://github.com/swordrain/electron-nwjs/blob/master/image/toolbar.png]
+![toolbar](https://github.com/swordrain/electron-nwjs/blob/master/image/toolbar.png)
 
 安装`osenv`
 ```
@@ -347,7 +347,7 @@ npm install osenv --save
 </div>
 ```
 
-!(home-folder)[https://github.com/swordrain/electron-nwjs/blob/master/image/home-folder.png]
+![home-folder](https://github.com/swordrain/electron-nwjs/blob/master/image/home-folder.png)
 
 新建`app.js`
 ```
@@ -401,7 +401,7 @@ main();
 
 `electron`的菜单项里有`View - Toggle Developer Tools`，可以显示`debug`信息
 
-!(electron-console)[https://github.com/swordrain/electron-nwjs/blob/master/image/electron-console.png]
+![electron-console](https://github.com/swordrain/electron-nwjs/blob/master/image/electron-console.png)
 
 安装`async`模块
 ```
@@ -472,7 +472,7 @@ function main() {
 main();
 ```
 
-!(electron-console-content)[https://github.com/swordrain/electron-nwjs/blob/master/image/electron-console-content.png]
+![electron-console-content](https://github.com/swordrain/electron-nwjs/blob/master/image/electron-console-content.png)
 
 修改`index.html`
 ```
@@ -561,4 +561,4 @@ function displayFiles(err, files){
 }
 ```
 
-!(lorikeet-effect-1)[https://github.com/swordrain/electron-nwjs/blob/master/image/lorikeet-effect-1.png]
+![lorikeet-effect-1](https://github.com/swordrain/electron-nwjs/blob/master/image/lorikeet-effect-1.png)
