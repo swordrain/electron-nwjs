@@ -12,7 +12,7 @@ npm install -g nw
 
 如果网络不佳，导致`postinstall`执行时无法正常从github上下载，可以手动下载nw在不同平台上对应的包，解压到`C:\Users\lianli\AppData\Roaming\npm\node_modules\nw\nwjs`文件夹，具体路径可以参考`C:\Users\lianli\AppData\Roaming\npm\node_modules\nw`下的`index.js`文件内容
 
-![nw.js](https://github.com/swordrain/electron-nsjw/blob/master/image/nwjs-win.png)
+![nw.js](https://github.com/swordrain/electron-nwjs/blob/master/image/nwjs-win.png)
 
 ## NW.js的Hello World
 新建`package.json`文件
@@ -73,7 +73,7 @@ npm install -g nw
 
 在`cmd`中进入所在路径，执行`nw`
 
-![nwjs-helloworld](https://github.com/swordrain/electron-nsjw/blob/master/image/nwjs-helloworld.png)
+![nwjs-helloworld](https://github.com/swordrain/electron-nwjs/blob/master/image/nwjs-helloworld.png)
 
 `nw.js`特性
 
