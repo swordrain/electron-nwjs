@@ -1272,8 +1272,92 @@ win.setKiosk(false);
 win.setKiosk(true);
 ```
 
-## 创建托盘应用
-在windows和linux中，托盘应用只能使用图标
+# 创建托盘应用
+在windows和linux中，托盘应用只能使用图标，在Mac OS中，可以使用图标或文本
 
-### NW.js
+## NW.js
+```js
+const gui = require('nw.gui');
+const tray = new gui.Tray({
+    //title: 'My tray app'
+    icon: "icon@2x.png"
+});
+const notes = [
+    {
+        title: 'todo list',
+        contents: 'grocery shopping\npick up kids\nsend birthday party invites'
+    }, {
+        title: 'grocery list',
+        contents: 'Milk\nEggs\nButter'
+    }
+];
+const menu = new gui.Menu();
+notes.forEach(note => {
+    menu.append(new gui.MenuItem({
+        label: note.title,
+        click: () => { alert(note.contents) }
+    }));
+});
+tray.menu = menu;
+```
 
+![tray](https://github.com/swordrain/electron-nwjs/blob/master/image/tray.png)
+
+## Electron
+在`main.js`中修改
+```js
+const electron = require("electron");
+const app = electron.app;
+const BrowserWindow = electron.BrowserWindow;
+const Tray = electron.Tray;
+const Menu = electron.Menu;
+
+let appIcon = null;
+let mainWindow = null;
+
+const notes = [
+    {
+        title: 'todo list',
+        contents: 'grocery shopping\npick up kids\nsend birthday party invites'
+    }, {
+        title: 'grocery list',
+        contents: 'Milk\nEggs\nButter'
+    }
+];
+
+function addNoteToMenu(note) {
+    return {
+        label: note.title,
+        type: 'normal',
+        click: () => { mainWindow.webContents.send('displayNotes', note); } //发送数据
+    }
+}
+
+app.on("window-all-closed", () => {
+    if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('ready', () => {
+    appIcon = new Tray('icon@2x.png');
+    let contextMenu = Menu.buildFromTemplate(notes.map(addNoteToMenu));
+    appIcon.setToolTip('Notes app');
+    appIcon.setContextMenu(contextMenu);
+
+    mainWindow = new BrowserWindow({});
+    mainWindow.loadURL(`file://${__dirname}/index.html`);
+    mainWindow.on("closed", () => {
+        mainWindow = null;
+    });
+});
+```
+
+在`app.js`中响应
+```js
+function displayNote(event, note) {
+    console.log(note)
+}
+const ipc = require('electron').ipcRenderer;
+ipc.on('displayNote', displayNote);
+```
+
+# 应用菜单和上下文菜单
