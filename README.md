@@ -1085,4 +1085,195 @@ npm run pack
 根据不同的桌面环境，如果是`Gnome`，右击图标，选择属性命令，单击左上角图标，选择图片然后确认
 
 # 内部机制
+## NW.js
+`NW.js`将`Node.js`和`Chromium`(使用`Blink`作为渲染引擎)通过`V8`引擎整合起来
+
+* 它们使用同一份V8实例
+    1. 加载`Node.js`和`Chromium`
+    2. `Node.js`的js上下文复制到`Chromium`的js上下文中
+* 将主要的事件循环集成
+    1. `Chromium`的事件循环被调整为使用一个自定义版本的`MessagePump`，它是构建在`libuv`（`Node.js`所用）之上的
+* 它们之间桥接`JavaScript`上下文
+    1. `Node.js`的`start`函数和`Chromium`的渲染进程进行集成
+
+## Electron
+* 使用`libchromiumcontent`代码库加载`Chromium`的`content`模块
+* Electron的组件
+    * App - 处理启动时的加载工作
+    * Browser - 处理前端部分的交互
+    * Renderer - 运行在`renderer`进程中
+    * Common - 工具类代码
+
+小结
+* 在`NW.js`中，`Node.js`和`Blink`共享`JavaScript`上下文，可以在多视窗间共享数据
+* 共享`JavaScript`状态意味着在同一个`NW.js`的多视窗应用中，可以共享同一个状态
+* `NW.js`使用了编译后的`Chromium`版本以及自定义绑定，而`Electron`使用了`Chromium`中的API将`Chromium`和`Node.js`整合在一起
+* `Electron`将前后端的`JavaScript`上下文进行了隔离
+* 当要在`Electron`应用的前后端进行数据共享时，需要通过`ipcMain`和`ipcRenderer`两个API进行消息传递来实现
+
+# 自定义桌面应用的外观
+## 视窗的尺寸和模式
+### NW.js
+通过`package.json`声明
+```json
+{
+    "name": "hello-world-nwjs",
+    "main": "index.html",
+    "version": "1.0.0",
+    "window": {
+        "width": 300,
+        "height": 200,
+        "max_width": 1024,
+        "max_height": 800,
+        "min_width": 200,
+        "min_height": 100
+    }
+}
+```
+
+通过`JavaScript`代码修改
+```js
+const gui = require('nw.gui');
+const win = gui.Window.get();
+win.width = 1024;
+win.height = 768;
+win.x = 400;
+win.y = 500;
+```
+
+### Electron
+在入口`JavaScript`文件里指定
+```js
+app.on('ready', () => {
+    mainWindow = new BrowserWindow({
+        width: 400, 
+        height: 200,
+        minWidth: 300,
+        minHeight: 150,
+        maxWidth: 600,
+        maxHeight: 450,
+        x: 10,
+        y: 10
+    });
+    mainWindow.loadURL(`file://${__dirname}/index.html`);
+    mainWindow.on("closed", ()=> {
+        mainWindow = null;
+    });
+});
+```
+
+## 全屏
+### NW.js
+通过`package.json`指定
+```json
+{
+    "window": {
+        "fullscreen": true
+    }
+}
+```
+
+通过`JavaScript`代码
+```js
+const gui = require('nw.gui');
+const win = gui.Window.get();
+win.enterFullscreen();
+win.leaveFullscreen();
+```
+
+### Electron
+传递参数
+```js
+mainWindow = new BrowserWindow({
+    fullscreen: true
+});
+```
+
+通过`JavaScript`代码
+```js
+const remote = require('electron').remote;
+const win = remote.getCurrentWindow();
+if (win.isFullScreen()) {
+    win.setFullScreen(false);
+} else {
+    win.setFullScreen(true);
+}
+```
+
+## 无边框应用
+### NW.js
+在`package.json`中设置
+```json
+{
+    "window": {
+        "frame": false,
+        "transparent": true 
+    }
+}
+```
+
+![noframe](https://github.com/swordrain/electron-nwjs/blob/master/image/noframe.png)
+
+默认情况下，无边框应用不能再被拖动，需要给`HTML`元素（比如body）设置
+```css
+body {
+    -webkit-app-region: drag;
+}
+/* 交互元素不设置 */
+button, select {
+    -webkit-app-region: no-drag;
+}
+/* 内容元素的设置 */
+p, img {
+    -webkit-app-region: no-drag;
+    -webkit-user-select: all;
+}
+```
+
+### Electron
+```js
+mainWindow = new BrowserWindow({
+    frame: false,
+    transparent: true
+});
+```
+
+## kiosk模式
+该模式限定了用户的操作，想象一下自助终端机，应用直接全屏，不能被关闭，也不能做别的事情
+
+### NW.js
+```json
+{
+    "window": {
+        "kiosk": true
+    }
+}
+```
+
+通过`JavaScript`代码退出`kiosk`模式
+```js
+const gui = require('nw.gui');
+const win = gui.Window.get();
+win.leaveKioskMode();
+```
+
+### Electron
+```js
+mainWindow = new BrowserWindow({
+    kiosk: true
+});
+```
+
+通过代码修改`kiosk`状态
+```js
+const remote = require('electron').remote;
+const win = remote.getCurrentWindow();
+win.setKiosk(false);
+win.setKiosk(true);
+```
+
+## 创建托盘应用
+在windows和linux中，托盘应用只能使用图标
+
+### NW.js
 
