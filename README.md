@@ -1361,3 +1361,122 @@ ipc.on('displayNote', displayNote);
 ```
 
 # 应用菜单和上下文菜单
+## 应用菜单
+### NW.js为Mac OS创建菜单
+```js
+const gui = require('nw.gui');
+const mb = new gui.Menu({type: 'menubar'});
+mb.createMacBuiltin('Mac app menu example');
+gui.Window().get().menu = mb;
+```
+
+### Electron为Mac OS创建菜单
+```js
+const electron = require('electron');
+const Menu = electron.remote.Menu;
+const name = electron.remote.app.getName();
+
+const template = [{
+    label: '',
+    submenu: [{
+        label: 'About ' + name,
+        role: 'about'
+    }, {
+        type: 'sepatator'
+    }, {
+        label: 'Quit',
+        accelerator: 'Command+Q',
+        click: electron.remote.app.quit
+    }]
+}];
+
+const menu = Menu.buildFromTemplate(template);
+Menu.setAppMenu(menu);
+```
+
+可以使用第三方库
+```
+npm install electron-default-menu --save
+```
+
+```js
+const electron = require('electron');
+const Menu = electron.remote.Menu;
+const defaultMenu = require('electron-default-menu');
+
+const menu = Menu.buildFromTemplate(defaultMenu());
+Menu.setAppMenu(menu);
+```
+
+首个菜单项的名字无论设置，都是应用的名字。如果想修改，参考`https://electronjs.org/docs/api/menu#main-menus-name`
+
+### 为Windows和Linux创建菜单
+使用`NW.js`
+```js
+const gui = require('nw.gui');
+const menuBar = new gui.Menu({ type: 'menubar' });
+const fileMenu = new gui.MenuItem({ label: 'File' });
+
+const sayHelloMenuItem = new gui.MenuItem({
+    label: 'Say hello',
+    click: () => { alert('Hello') }
+});
+const quitAppMenuItem = new gui.MenuItem({
+    label: 'Quit the app',
+    click: () => { process.exit(0); }
+});
+
+const fileMenuSubMenu = new gui.Menu();
+fileMenuSubMenu.append(sayHelloMenuItem);
+fileMenuSubMenu.append(quitAppMenuItem);
+fileMenu.submenu = fileMenuSubMenu;
+
+menuBar.append(fileMenu);
+gui.Window.get().menu = menuBar;
+```
+
+![windows-menu](https://github.com/swordrain/electron-nwjs/blob/master/image/windows-menu.png)
+
+使用`Electron`
+在`index.html`引用的`app.js`里
+```js
+const electron = require('electron');
+const Menu = electron.remote.Menu;
+
+const sayHello = () => { alert('Hello'); };
+
+const quitTheApp = () => { electron.remote.app.quit(); };
+
+const template = [
+    {
+        label: 'File',
+        submenu: [
+            {
+                label: 'Say Hello',
+                click: sayHello
+            },
+            {
+                label: 'Quit the app',
+                click: quitTheApp
+            }
+        ]
+    }
+];
+
+const menu = Menu.buildFromTemplate(template);
+Menu.setApplicationMenu(menu);    
+```
+
+## 判断操作系统载入菜单
+```js
+const os = require('os');
+if (os.platform() === 'darwin') {
+    loadMenuForMacOS();
+} else {
+    loadMenuForWindowsAndLinux();
+}
+```
+
+## 上下文菜单
+### NW.js
+
