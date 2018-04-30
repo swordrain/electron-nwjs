@@ -1844,3 +1844,128 @@ new notify(`New Notification`, {
 * 使用`Spectron`进行功能测试
 * 使用`Cucumber`进行集成测试
 
+# 调试与性能
+## 调试
+`NW.js`需要下载使用`SDK`版本才有调试工具支持
+```
+npm install nwjs --nwjs_build_type=sdk
+node_modules/.bin/nw install 0.30.2-sdk
+node_modules/nw/bin/nw
+```
+
+```json
+{
+    "window": {
+        "toolbar": true
+    }
+}
+```
+
+在`Windows`环境下，点右键会有调试菜单
+
+![nwjs-debug](https://github.com/swordrain/electron-nwjs/blob/master/image/nwjs-debug.png)
+
+> 也可以使用 `--remote-debugging-port=PORT` 开启远程调试，然后使用`node debug -p PROCESS_ID`
+
+`Electron`在默认的菜单里可以打开开发者工具，或者使用快捷键`Ctrl(Command) + Shift + I`
+
+`Electron`也有自己的调试工具
+```
+npm i devtron --save-dev
+```
+
+然后在开发者工具中的`console`中执行
+```js
+require('devtron').install()
+```
+
+安装完成后，开发者工具里多一个`Devtron`选项卡(http://electron.atom.io/devtron)
+
+![devtron](https://github.com/swordrain/electron-nwjs/blob/master/image/devtron.png)
+
+## 性能
+使用开发者工具
+
+# 打包
+## NW.js创建Windows的exe
+1. 将代码压缩成zip文件`package.nw`
+2. 将`package.nw`复制到和`nw.exe`在同一个文件夹中
+3. 运行`copy /b nw.exe+package.nw lorikeet.exe`
+
+## Electron创建Windows的exe
+1. 安装`asar` `npm install -g asar`
+2. `asar pack hello-world-electron app.asar`
+3. 下载一份`electron`二进制文件并解压
+4. 将`app.asar`复制到目录的`resources`文件夹下
+5. 修改`exe`文件名称
+6. 安装`rcedit` `npm install -g rcedit`
+7. 修改图标`rcedit electron.exe --set-icon "my-app-icon.ico"`
+
+或者使用`electron-packager`来打包(www.npmjs.com/package/electron-packager)
+
+## NW.js创建Windows启动安装器
+* Nullsoft的NSIS
+* Inno Setup
+* WinRAR
+
+## Electron创建Windows启动安装器
+* Grunt-Electron-Installer
+* Electron-installer-squirrel-windows
+* electron-packager
+* electron-builder
+
+## NW.js创建Mac OS可执行文件
+```
+npm install -g nw-builder
+nwbuild lorikeet-nwjs -p osx64
+```
+
+如果要进一步转成`dmg`文件
+```
+npm install -g appdmg
+appdmg <json-path> <dmg-path> # json文件里包含了appdmg的配置信息
+```
+
+## Electron创建Mac OS可执行文件
+```
+npm i electron-builder --save-dev
+```
+
+确保`package.json`里包含`name`、`version`、`author`、`description`字段，并添加
+```json
+{
+    "build": {
+        "mac": {
+            "title": "Hello World",
+            "icon": "icon.icns",
+            "background": "background.png",
+            "icon-size": 80,
+            "contents": [{
+                "x": 448,
+                "y": 220,
+                "type": "link",
+                "path": "/Applications"
+            }, {
+                "x": 192,
+                "y": 220,
+                "type": "file",
+                "path": "dist/hello-world-darwin-x64/hello-world.app"
+            }]
+        }
+    }
+}
+```
+
+执行`npm run pack && npm run dist`
+
+## NW.js为Linux创建可执行应用
+```
+npm install -g nw-builder
+nwbuilder cirrus -p linux32,linux64
+```
+
+## Electron为Linux创建可执行应用
+* Grunt-build-atom-shell
+* electron-packager
+* electron-builder
+
