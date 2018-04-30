@@ -1,3 +1,7 @@
+![cover](https://img11.360buyimg.com/n1/jfs/t17152/89/1135528726/344771/5944fb5a/5abca7aeN33b58fbc.jpg)
+
+[github](https://github.com/paulbjensen/cross-platform-desktop-applications/)
+
 # 入门
 * 起源于node-webkit项目
 * 两者在内部架构上采用不同的方案
@@ -1146,6 +1150,8 @@ win.y = 500;
 ```js
 app.on('ready', () => {
     mainWindow = new BrowserWindow({
+        useContentSize: true, //视窗宽高根据内容来设定
+        resizable: true,
         width: 400, 
         height: 200,
         minWidth: 300,
@@ -1479,4 +1485,362 @@ if (os.platform() === 'darwin') {
 
 ## 上下文菜单
 ### NW.js
+```js
+ const gui = require('nw.gui');
+function initialize(window, gui) {
+    if (!document) document = window.document;
+    const menu = new gui.Menu();
+    
+    menu.append(new gui.MenuItem({
+        icon: 'image.png',
+        label: 'Insert image',
+        click: () => {}
+    }));
+
+    menu.append(new gui.MenuItem({
+        icon: 'youtube.png',
+        label: 'Insert video',
+        click: () => {}
+    }));
+    document.querySelector('#app').addEventListener('contextmenu', event => {
+        event.preventDefault();
+        menu.popup(event.x, event.y);
+        return false;
+    });
+}
+
+window.onload = function() {
+    initialize(window, gui);
+}
+```
+
+![contextmenu](https://github.com/swordrain/electron-nwjs/blob/master/image/contextmenu.png)
+
+### Electron
+读一下[源码](https://github.com/paulbjensen/cross-platform-desktop-applications/tree/master/chapter-09/cirrus-electron)，了解`electron`是如何在`main`进程和`renderer`进程之间通过`ipcMain`和`ipcRenderer`进行消息传递
+
+```js
+const electron = require('electron');
+const Menu = electron.remote.Menu;
+const MenuItem = electron.remote.MenuItem;
+const menu = new Menu();
+menu.append(new MenuItem({label: 'Insert image', click: () => {}}));
+menu.append(new MenuItem({label: 'Insert video', click: () => {}}));
+document.querySelector("#app").addEventListener('contextmenu', function(event) {
+    event.preventDefault();
+    menu.popup(event.x, event.y);
+    return false;
+});
+```
+
+> Electron不支持`prompt`，可以使用www.npmjs.com/package/dialogs代替
+
+# 拖拽文件以及定制界面
+## 拖拽文件
+使用了`HTML5`的`d&d`
+```js
+function stopDefaultEvent (event) {
+	event.preventDefault();
+	return false;	
+}
+
+window.ondragover = stopDefaultEvent;
+window.ondrop = stopDefaultEvent;
+
+function displayImageInIconSet (filePath) {
+	var images = window.document.querySelectorAll('#icons img');
+	for (var i=0;i<images.length;i++) {
+		images[i].src = filePath;
+	}
+}
+
+function displayIconsSet () {
+	var iconsArea = window.document.querySelector('#icons');
+	iconsArea.style.display = 'block';
+}
+
+function interceptDroppedFile () {
+	var interceptArea = window.document.querySelector('#load-icon-holder');
+	interceptArea.ondrop = function (event) {
+		event.preventDefault();
+		if (event.dataTransfer.files.length !== 1) {
+			window.alert('You have dragged too many files into the app. Drag just 1 file');
+		} else {
+			interceptArea.style.display = 'none';
+			displayIconsSet();
+			var file = event.dataTransfer.files[0];
+			displayImageInIconSet(file.path);
+		}
+		return false;
+	};
+}
+
+window.onload = function () {
+	interceptDroppedFile();
+};
+```
+
+## 模拟操作系统原生样式
+### 检测操作系统
+```js
+var os 		= require('os');
+var platform 	= os.platform();
+
+
+function addStylesheet (stylesheet) {
+  var head = document.getElementsByTagName('head')[0];
+  var link = document.createElement('link');
+  link.setAttribute('rel','stylesheet');
+  link.setAttribute('href',stylesheet+'.css');
+  head.appendChild(link);
+}
+
+function labelOS (osName) {
+  document.getElementById('os-label').innerText = osName;
+}
+
+function initialize () {
+  switch (platform) {
+  	case 'darwin':
+  	  addStylesheet('mac');
+      labelOS('macOS');
+  	  break;
+  	case 'linux':
+  	  addStylesheet('linux');
+      labelOS('Linux');
+  	  break;
+  	case 'win32':
+  	  addStylesheet('windows');
+      labelOS('Microsoft Windows');
+  	  break;
+  	default:
+  	  console.log('Could not detect OS for platform',platform);
+  }
+}
+
+window.onload = initialize;
+```
+
+`os.release()`可以进一步返回技术层面上的版本号（和产品显示的版本号可能不一致）
+
+### 使用CSS匹配操作系统
+
+* [Metro UI](https://metroui.org.ua)
+* [Mac OS Lion CSS UI Kit](https://sakamies.github.io/Lion-CSS-UI-Kit)
+* [Photon](http://photonkit.com)
+* [Photon React](https://github.com/react-photonkit/react-photonkit)
+* [React Desktop](http://reactdesktop.js.org)
+
+# 网络摄像头
+调用`HTML5`的API，不需要申请权限
+
+`NW.js`使用隐藏的`<input type="file">`元素来弹出保存文件对话框
+```js
+const fs = require('fs');
+let photoData;
+let saveFile;
+let video;
+
+function bindSavingPhoto () {
+    saveFile.addEventListener('change', function () {
+        let filePath = this.value;
+        fs.writeFile(filePath, photoData, 'base64', (err) => {
+        if (err) alert('There was a problem saving the photo:', err.message);
+        photoData = null;
+        });
+    });
+}
+
+function initialize () {
+    saveFile = window.document.querySelector('#saveFile');
+    video = window.document.querySelector('video');
+
+    let errorCallback = (error) => {
+        console.log('There was an error connecting to the video stream:', error);
+    };
+
+    window.navigator.webkitGetUserMedia({video: true}, (localMediaStream) => {
+        video.src = window.URL.createObjectURL(localMediaStream);
+        video.onloadedmetadata = bindSavingPhoto;
+    }, errorCallback);
+}
+
+function takePhoto () {
+    let canvas = window.document.querySelector('canvas');
+    canvas.getContext('2d').drawImage(video, 0, 0, 800, 600);
+    photoData = canvas.toDataURL('image/png').replace(/^data:image\/(png|jpg|jpeg);base64,/, '');
+    saveFile.click();
+}
+
+window.onload = initialize;
+```
+
+`Electron`使用API
+```js
+const electron = require('electron');
+const dialog = electron.remote.dialog;
+const fs = require('fs');
+let photoData;
+let video;
+
+function savePhoto (filePath) {
+    if (filePath) {
+        fs.writeFile(filePath, photoData, 'base64', (err) => {
+        if (err) alert(`There was a problem saving the photo: ${err.message}`);
+        photoData = null;
+    });
+  }
+}
+
+function initialize () {
+    video = window.document.querySelector('video');
+    let errorCallback = (error) => {
+        console.log(`There was an error connecting to the video stream: ${error.message}`);
+    };
+
+    window.navigator.webkitGetUserMedia({video: true}, (localMediaStream) => {
+        video.src = window.URL.createObjectURL(localMediaStream);
+    }, errorCallback);
+}
+
+function takePhoto () {
+    let canvas = window.document.querySelector('canvas');
+    canvas.getContext('2d').drawImage(video, 0, 0, 800, 600);
+    photoData = canvas.toDataURL('image/png').replace(/^data:image\/(png|jpg|jpeg);base64,/, '');
+    dialog.showSaveDialog({
+        title: "Save the photo",
+        defaultPath: 'myfacebomb.png',
+        buttonLabel: 'Save photo'
+    }, savePhoto);
+}
+
+window.onload = initialize;
+```
+
+# 存储应用数据
+名字 | 数据库类型 | 类型 | 网址 
+- | :-: | :-: | :-:
+IndexedDB | key/value | 浏览器API | https://is.gd/wwDSgj 
+localStorage | key/value | 浏览器API | https://is.gd/3XbaFQ 
+Lovefield | relationship | 3rd | https://github.com/google/lovefield
+PouchDB | document | 3rd | https://pouchdb.com
+SQLite | relationship | embeded | http://sqlite.com
+NeDB | document | embeded | http://is.gd/f44eap
+LevelDB | key/value | embeded | http://leveldb.org
+Minimongo | document | 3rd | https://is.gd/yTRXhe
+
+# 复制粘贴
+## NW.js
+`NW.js`只支持文本类型的剪贴板数据
+```js
+const gui = require('nw.gui');
+const clipboard = gui.Clipboard.get();
+
+clipboard.set('FooBar', 'text');
+clipboard.get('text');
+clipboard.clear();
+```
+
+## Electron
+`Electron`能支持文本、图片、HTML、RTF类型的剪贴板数据
+```js
+const electron = require('electron');
+const clipboard = electron.clipboard;
+
+clipboard.writeText('FooBar');
+clipboard.readText();
+clipboard.clear();
+
+clipboard.writeImage(image);
+clipboard.readImage();
+clipboard.writeRTF(richText);
+clipboard.readRTF();
+clipboard.writeHTML(html);
+clipboard.readHTML();
+```
+
+# 键盘快捷键
+[贪吃蛇](https://github.com/paulbjensen/cross-platform-desktop-applications/tree/master/chapter-14)
+
+应用内快捷键使用事件监听`keydown`
+
+`NW.js`实现全局键盘快捷键
+```js
+const pauseKeyOptions = {
+    key: 'Ctrl+P',
+    active: () => {
+        alert("Bingo");
+    },
+    failed: () => {
+
+    }
+};
+const pauseShortcut = new nw.Shortcut(pauseKeyOptions);
+nw.App.registerGlobalHotKey(pauseShortcut);
+
+process.on('exit', () => {
+    nw.App.unregisterGlobalHotKey(pauseShortcut);
+});
+```
+
+`Electron`实现全局键盘快捷键
+```js
+//main.js
+const { globalShortcut } = electron;
+app.on('ready', () => {
+    mainWindow = new BrowserWindow();
+    mainWindow.loadURL(`file://${__dirname}/index.html`);
+    mainWindow.on("closed", () => {
+        mainWindow = null;
+    });
+    const pauseKey = globalShortcut.register('CommandOrControl+P', () => {
+        mainWindow.webContents.send('togglePauseState');
+    });
+});
+
+app.on('will-quit', () => {
+    globalShortcut.unregister('CommandOrControl+P');
+});
+
+//index.html
+const ipcRenderer = require('electron').ipcRenderer;
+ipcRenderer.on('togglePauseState', () => {
+    alert('Bingo');
+});
+```
+
+# 桌面通知
+## Electron
+安装`electron-notifications`(https://github.com/blainesch/electron-notifications)
+```
+npm install --save electron-notification
+```
+
+```js
+const notifier = require('electron-notifications')
+
+notifier.notify('Calendar', {
+    message: 'Event begins in 10 minutes',
+    icon: 'http://cl.ly/J49B/3951818241085781941.png',
+    buttons: ['Dismiss', 'Snooze'],
+});
+```
+
+![electron-notification](https://github.com/swordrain/electron-nwjs/blob/master/image/electron-notification.png)
+
+## NW.js
+使用`Chrome`原生API
+```js
+let notify = Notification;
+new notify(`New Notification`, {
+    body: 'Foobar',
+    icon: 'youtube.png'
+});
+```
+![nwjs-notification](https://github.com/swordrain/electron-nwjs/blob/master/image/nwjs-notification.png)
+
+# 测试
+* 使用`Mocha`进行单元测试
+* 使用`Spectron`进行功能测试
+* 使用`Cucumber`进行集成测试
 
